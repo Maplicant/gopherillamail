@@ -40,11 +40,10 @@ func blankInbox() (*Inbox, error) {
 		Jar: cjar,
 	}
 	inb := &Inbox{
-		httpclient: hcl
+		httpclient: hcl,
+		Ip:         STANDARD_IP,
+		User_agent: STANDARD_USERAGENT,
 	}
-
-	inb.ip = STANDARD_IP
-	inb.user_agent = STANDARD_USERAGENT
 
 	return inb, nil
 }
@@ -53,26 +52,26 @@ func blankInbox() (*Inbox, error) {
 func NewInbox(email string) (*Inbox, error) {
 	inb, err := blankInbox()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = inb.setEmail(email)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return &inb
+	return inb, nil
 }
 
 // Returns an Inbox with a random email
 func AnonymousInbox() (*Inbox, error) {
 	inb, err := blankInbox()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = inb.randomEmail()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return &inb
+	return inb, err
 }
 
 // Does a function call to Guerrillamail's api
@@ -82,8 +81,8 @@ func (c *Inbox) doRequest(function_name string, args map[string]string) error {
 		fmt.Sprintf(
 			"http://api.guerrillamail.com/ajax.php?f=%s&ip=%s&agent=%s",
 			function_name,
-			c.ip,
-			c.user_agent,
+			c.Ip,
+			c.User_agent,
 		),
 		nil,
 	)
@@ -105,11 +104,12 @@ func (c *Inbox) doRequest(function_name string, args map[string]string) error {
 	}
 
 	defer resp.Body.Close()
+	return nil
 }
 
 // Sets the user agent
 func (c *Inbox) SetUserAgent(user_agent string) {
-	c.user_agent = user_agent
+	c.User_agent = user_agent
 }
 
 // Sets the email address
@@ -118,6 +118,7 @@ func (c *Inbox) setEmail(user_agent string) error {
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 func (c *Inbox) GetEmail(user_agent string) error {
@@ -125,23 +126,25 @@ func (c *Inbox) GetEmail(user_agent string) error {
 		"get_email_address",
 		map[string]string{
 			"lang": "en",
-			""
+			// "",
 		},
 	)
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 // Asks Guerrillamail for a random email address
-func (c *Inbox) randomEmail(user_agent string) error {
+func (c *Inbox) randomEmail() error {
 	err := c.doRequest()
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 // Sets the client IP
 func (c *Inbox) SetIP(ip string) {
-	c.ip = ip
+	c.Ip = ip
 }
