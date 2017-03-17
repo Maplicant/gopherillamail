@@ -1,7 +1,5 @@
 package gopherillamail
 
 import (
-    "testing"
+	"testing"
 )
-
-func Test
