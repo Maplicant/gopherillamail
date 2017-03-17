@@ -3,6 +3,7 @@ package gopherillamail
 import (
 	"fmt"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 )
 
@@ -26,18 +27,21 @@ type Mail struct {
 }
 
 type Inbox struct {
-	email           string
-	user_agent      string
-	ip              string
+	User_agent      string
+	Ip              string
 	email_timestamp uint
 	httpclient      *http.Client
-	SUBSCR          bool
-	PHPSESSID       string
 }
 
 // Returns an Inbox without any email
 func blankInbox() (*Inbox, error) {
-	inb := &Inbox{}
+	cjar, _ := cookiejar.New(nil)
+	hcl := &http.Client{
+		Jar: cjar,
+	}
+	inb := &Inbox{
+		httpclient: hcl
+	}
 
 	inb.ip = STANDARD_IP
 	inb.user_agent = STANDARD_USERAGENT
@@ -51,7 +55,10 @@ func NewInbox(email string) (*Inbox, error) {
 	if err != nil {
 		return err
 	}
-	inb.setEmail(email)
+	err = inb.setEmail(email)
+	if err != nil {
+		return err
+	}
 	return &inb
 }
 
@@ -61,7 +68,10 @@ func AnonymousInbox() (*Inbox, error) {
 	if err != nil {
 		return err
 	}
-	inb.randomEmail()
+	err = inb.randomEmail()
+	if err != nil {
+		return err
+	}
 	return &inb
 }
 
@@ -81,13 +91,12 @@ func (c *Inbox) doRequest(function_name string, args map[string]string) error {
 		return err
 	}
 
-	// Build the querystring
+	// Build the querystring from the arguments
 	q := req.URL.Query()
 	for key, val := range args {
 		q.Add(key, val)
 	}
-	// q.Add("api_key", "key_from_environment_or_flag")
-	// q.Add("another_thing", "foo & bar")
+	// Set the querystring
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := c.httpclient.Do(req)
@@ -105,15 +114,34 @@ func (c *Inbox) SetUserAgent(user_agent string) {
 
 // Sets the email address
 func (c *Inbox) setEmail(user_agent string) error {
-	c.doRequest()
+	err := c.doRequest()
+	if err != nil {
+		return err
+	}
+}
+
+func (c *Inbox) GetEmail(user_agent string) error {
+	err := c.doRequest(
+		"get_email_address",
+		map[string]string{
+			"lang": "en",
+			""
+		},
+	)
+	if err != nil {
+		return err
+	}
 }
 
 // Asks Guerrillamail for a random email address
 func (c *Inbox) randomEmail(user_agent string) error {
-	c.doRequest()
+	err := c.doRequest()
+	if err != nil {
+		return err
+	}
 }
 
-// Sets the IP
-func (c *Inbox) SetIP(ip string) error {
+// Sets the client IP
+func (c *Inbox) SetIP(ip string) {
 	c.ip = ip
 }
