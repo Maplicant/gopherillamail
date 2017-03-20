@@ -70,32 +70,36 @@ func NewInbox(email string) (*Inbox, error) {
 func AnonymousInbox() (*Inbox, error) {
 	inb, err := blankInbox()
 	if err != nil {
-		return inb, err
+		return inb, fmt.Errorf("could not create blank inbox: %v", err)
 	}
 
 	err = inb.randomEmail()
 	if err != nil {
-		return inb, err
+		return inb, fmt.Errorf("could not create random email: %v", err)
 	}
 
 	err = inb.getEmail() // You have to call this at least once to set the sid_token and the Email in the struct
+	if err != nil {
+		return inb, fmt.Errorf("could not get initial email list: %v", err)
+	}
+
 	return inb, nil
 }
 
 // Does a function call to Guerrillamail's api
-func (c *Inbox) doRequest(function_name string, args map[string]string) error {
+func (c *Inbox) doRequest(functionName string, args map[string]string) error {
 	req, err := http.NewRequest(
 		"GET",
 		fmt.Sprintf(
 			"http://api.guerrillamail.com/ajax.php?f=%s&ip=%s&agent=%s",
-			function_name,
+			functionName,
 			c.IP,
 			c.UserAgent,
 		),
 		nil,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not build request to GuerrillaMail: %v", err)
 	}
 
 	// Build the querystring from the arguments
@@ -108,7 +112,7 @@ func (c *Inbox) doRequest(function_name string, args map[string]string) error {
 
 	resp, err := c.httpclient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not do request to GuerrillaMail: %v", err)
 	}
 
 	defer resp.Body.Close()
@@ -124,7 +128,7 @@ func (c *Inbox) SetUserAgent(userAgent string) {
 func (c *Inbox) setEmail(userAgent string) error {
 	err := c.doRequest()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not set email address: %v", err)
 	}
 	return nil
 }
@@ -139,7 +143,7 @@ func (c *Inbox) getEmail() error {
 		},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get email address: %v", err)
 	}
 	return nil
 }
