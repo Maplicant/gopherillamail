@@ -16,6 +16,7 @@ var (
 	STANDARD_USERAGENT = fmt.Sprintf("GopherillaMail v%s", VERSION)
 )
 
+// Mail is an e-mail from GuerrillaMail
 type Mail struct {
 	guid    string
 	subject string
@@ -26,11 +27,15 @@ type Mail struct {
 	body    string
 }
 
+// Inbox is a struct that allows you to retrieve e-mails from GuerrillaMail
 type Inbox struct {
-	User_agent      string
-	Ip              string
-	email_timestamp uint
-	httpclient      *http.Client
+	UserAgent      string
+	IP             string
+	sid_token      string
+	Email          string
+	EmailList      []Mail
+	emailTimestamp uint
+	httpclient     *http.Client
 }
 
 // Returns an Inbox without any email
@@ -41,14 +46,14 @@ func blankInbox() (*Inbox, error) {
 	}
 	inb := &Inbox{
 		httpclient: hcl,
-		Ip:         STANDARD_IP,
-		User_agent: STANDARD_USERAGENT,
+		IP:         STANDARD_IP,
+		UserAgent:  STANDARD_USERAGENT,
 	}
 
 	return inb, nil
 }
 
-// Returns an Inbox with a custom email
+// NewInbox returns an Inbox with a custom email
 func NewInbox(email string) (*Inbox, error) {
 	inb, err := blankInbox()
 	if err != nil {
@@ -61,17 +66,20 @@ func NewInbox(email string) (*Inbox, error) {
 	return inb, nil
 }
 
-// Returns an Inbox with a random email
+// AnonymousInbox returns an Inbox with a random email
 func AnonymousInbox() (*Inbox, error) {
 	inb, err := blankInbox()
 	if err != nil {
-		return nil, err
+		return inb, err
 	}
+
 	err = inb.randomEmail()
 	if err != nil {
-		return nil, err
+		return inb, err
 	}
-	return inb, err
+
+	err = inb.getEmail() // You have to call this at least once to set the sid_token and the Email in the struct
+	return inb, nil
 }
 
 // Does a function call to Guerrillamail's api
@@ -81,8 +89,8 @@ func (c *Inbox) doRequest(function_name string, args map[string]string) error {
 		fmt.Sprintf(
 			"http://api.guerrillamail.com/ajax.php?f=%s&ip=%s&agent=%s",
 			function_name,
-			c.Ip,
-			c.User_agent,
+			c.IP,
+			c.UserAgent,
 		),
 		nil,
 	)
@@ -107,13 +115,13 @@ func (c *Inbox) doRequest(function_name string, args map[string]string) error {
 	return nil
 }
 
-// Sets the user agent
-func (c *Inbox) SetUserAgent(user_agent string) {
-	c.User_agent = user_agent
+// SetUserAgent sets the user agent
+func (c *Inbox) SetUserAgent(userAgent string) {
+	c.UserAgent = userAgent
 }
 
 // Sets the email address
-func (c *Inbox) setEmail(user_agent string) error {
+func (c *Inbox) setEmail(userAgent string) error {
 	err := c.doRequest()
 	if err != nil {
 		return err
@@ -121,7 +129,8 @@ func (c *Inbox) setEmail(user_agent string) error {
 	return nil
 }
 
-func (c *Inbox) GetEmail(user_agent string) error {
+// getEmail Gets the e-mail address of your inbox and sets the sid_token
+func (c *Inbox) getEmail() error {
 	err := c.doRequest(
 		"get_email_address",
 		map[string]string{
@@ -135,16 +144,25 @@ func (c *Inbox) GetEmail(user_agent string) error {
 	return nil
 }
 
-// Asks Guerrillamail for a random email address
-func (c *Inbox) randomEmail() error {
+// getEmailList does the initial call to initialize the EmailList. Shouldn't be used to check for new e-mails.
+func (c *Inbox) getEmailList() error {
 	err := c.doRequest()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get initial emails: %v", err)
 	}
 	return nil
 }
 
-// Sets the client IP
-func (c *Inbox) SetIP(ip string) {
-	c.Ip = ip
+// Asks Guerrillamail for a random email address
+func (c *Inbox) randomEmail() error {
+	err := c.doRequest()
+	if err != nil {
+		return fmt.Errorf("could not generate random email: %v", err)
+	}
+	return nil
+}
+
+// SetIP sets the client IP
+func (c *Inbox) SetIP(IP string) {
+	c.IP = IP
 }
