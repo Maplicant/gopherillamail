@@ -8,12 +8,7 @@ import (
 )
 
 const (
-	VERSION     = "0.1"
 	STANDARD_IP = "127.0.0.1"
-)
-
-var (
-	STANDARD_USERAGENT = fmt.Sprintf("GopherillaMail v%s", VERSION)
 )
 
 // Mail is an e-mail from GuerrillaMail
@@ -39,7 +34,7 @@ type Inbox struct {
 }
 
 // Returns an Inbox without any email
-func blankInbox() (*Inbox, error) {
+func blankInbox(userAgent string) (*Inbox, error) {
 	cjar, _ := cookiejar.New(nil)
 	hcl := &http.Client{
 		Jar: cjar,
@@ -47,15 +42,15 @@ func blankInbox() (*Inbox, error) {
 	inb := &Inbox{
 		httpclient: hcl,
 		IP:         STANDARD_IP,
-		UserAgent:  STANDARD_USERAGENT,
+		UserAgent:  userAgent,
 	}
 
 	return inb, nil
 }
 
 // NewInbox returns an Inbox with a custom email
-func NewInbox(email string) (*Inbox, error) {
-	inb, err := blankInbox()
+func NewInbox(userAgent, email string) (*Inbox, error) {
+	inb, err := blankInbox(userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +62,8 @@ func NewInbox(email string) (*Inbox, error) {
 }
 
 // AnonymousInbox returns an Inbox with a random email
-func AnonymousInbox() (*Inbox, error) {
-	inb, err := blankInbox()
+func AnonymousInbox(userAgent string) (*Inbox, error) {
+	inb, err := blankInbox(userAgent)
 	if err != nil {
 		return inb, fmt.Errorf("could not create blank inbox: %v", err)
 	}
